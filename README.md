@@ -60,7 +60,7 @@ Este repositório reúne:
 Em um servidor Ubuntu com IP fixo, execute:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NeoDeskOficial/pihole-ubuntu-ptbr/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/NeoDeskOfocial/pihole-ubuntu-ptbr/main/install.sh | sudo bash
 ```
 
 O assistente do Pi-hole faz perguntas durante a instalação (interface de rede, DNS upstream, etc.). Por isso, execute o comando em um terminal interativo, como uma sessão SSH.
@@ -70,7 +70,7 @@ O assistente do Pi-hole faz perguntas durante a instalação (interface de rede,
 Executar scripts baixados da internet exige confiança na origem. Se quiser ler o código antes:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NeoDeskOficial/pihole-ubuntu-ptbr/main/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/NeoDeskOfocial/pihole-ubuntu-ptbr/main/install.sh -o install.sh
 less install.sh
 sudo bash install.sh
 ```
@@ -98,7 +98,7 @@ O script pede confirmação antes de qualquer ação mais sensível e encerra co
 Passe opções com `bash -s --`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NeoDeskOficial/pihole-ubuntu-ptbr/main/install.sh | sudo bash -s -- --sem-upgrade
+curl -fsSL https://raw.githubusercontent.com/NeoDeskOfocial/pihole-ubuntu-ptbr/main/install.sh | sudo bash -s -- --sem-upgrade
 ```
 
 | Opção | Efeito |
