@@ -63,8 +63,6 @@ Em um servidor Ubuntu com IP fixo, execute:
 curl -fsSL https://raw.githubusercontent.com/NeoDeskOficial/pihole-ubuntu-ptbr/main/install.sh | sudo bash
 ```
 
-> Troque `SEU-USUARIO` pelo nome da conta do GitHub onde o repositório foi publicado.
-
 O assistente do Pi-hole faz perguntas durante a instalação (interface de rede, DNS upstream, etc.). Por isso, execute o comando em um terminal interativo, como uma sessão SSH.
 
 ### Prefere revisar o script antes de executar?
