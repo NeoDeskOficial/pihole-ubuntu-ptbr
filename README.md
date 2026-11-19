@@ -60,7 +60,7 @@ Este repositório reúne:
 Em um servidor Ubuntu com IP fixo, execute:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SEU-USUARIO/pihole-ubuntu-ptbr/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/NeoDeskOficial/pihole-ubuntu-ptbr/main/install.sh | sudo bash
 ```
 
 > Troque `SEU-USUARIO` pelo nome da conta do GitHub onde o repositório foi publicado.
