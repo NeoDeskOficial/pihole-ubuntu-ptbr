@@ -1,43 +1,120 @@
-# Instalação do Pi-hole em Servidor Ubuntu
+<div align="center">
 
-Guia completo, em português, para instalar e configurar o [Pi-hole](https://pi-hole.net/) em um servidor Ubuntu (22.04 LTS, 24.04 LTS e 26.04 LTS), funcionando como bloqueador de anúncios e rastreadores em nível de DNS para toda a sua rede.
+# Pi-hole no Ubuntu Server
 
-> **Versão de referência:** Pi-hole v6.x. Os comandos e caminhos de arquivos deste guia seguem essa versão.
+**Instale o Pi-hole em servidor Ubuntu com um único comando, ou siga o passo a passo manual completo em português.**
+
+![Licença MIT](https://img.shields.io/badge/licença-MIT-green)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04%20|%2024.04%20|%2026.04-E95420?logo=ubuntu&logoColor=white)
+![Pi-hole](https://img.shields.io/badge/Pi--hole-v6-96060C)
+![Idioma](https://img.shields.io/badge/idioma-PT--BR-blue)
+
+</div>
 
 ---
 
 ## Sumário
 
-1. [O que é o Pi-hole](#1-o-que-é-o-pi-hole)
-2. [Requisitos](#2-requisitos)
-3. [Preparação do servidor](#3-preparação-do-servidor)
-4. [Configuração de IP fixo](#4-configuração-de-ip-fixo)
-5. [Resolvendo conflito na porta 53 (se necessário)](#5-resolvendo-conflito-na-porta-53-se-necessário)
-6. [Instalação do Pi-hole](#6-instalação-do-pi-hole)
-7. [Acesso à interface web e senha](#7-acesso-à-interface-web-e-senha)
-8. [Configuração do firewall (UFW)](#8-configuração-do-firewall-ufw)
-9. [Apontando a rede para o Pi-hole](#9-apontando-a-rede-para-o-pi-hole)
-10. [Listas de bloqueio (adlists)](#10-listas-de-bloqueio-adlists)
-11. [Comandos úteis](#11-comandos-úteis)
-12. [Atualização](#12-atualização)
-13. [Solução de problemas](#13-solução-de-problemas)
-14. [Desinstalação](#14-desinstalação)
-15. [Referências](#15-referências)
+- [Sobre o projeto](#sobre-o-projeto)
+- [Instalação rápida (uma linha)](#instalação-rápida-uma-linha)
+- [O que o instalador faz](#o-que-o-instalador-faz)
+- [Opções do instalador](#opções-do-instalador)
+- [Requisitos](#requisitos)
+- [Instalação manual passo a passo](#instalação-manual-passo-a-passo)
+- [Configurando a rede para usar o Pi-hole](#configurando-a-rede-para-usar-o-pi-hole)
+- [Listas de bloqueio](#listas-de-bloqueio)
+- [Comandos úteis](#comandos-úteis)
+- [Atualização](#atualização)
+- [Solução de problemas](#solução-de-problemas)
+- [Desinstalação](#desinstalação)
+- [Perguntas frequentes](#perguntas-frequentes)
+- [Referências](#referências)
+- [Contribuindo](#contribuindo)
+- [Licença](#licença)
 
 ---
 
-## 1. O que é o Pi-hole
+## Sobre o projeto
 
-O Pi-hole é um servidor DNS com filtragem. Quando um dispositivo da rede tenta acessar um domínio de anúncio, rastreador ou malware que esteja nas listas de bloqueio, o Pi-hole responde com um endereço nulo e a requisição não é concluída.
+O [Pi-hole](https://pi-hole.net/) é um servidor DNS com filtragem. Quando um dispositivo tenta acessar um domínio de anúncio, rastreador ou malware que esteja nas listas de bloqueio, o Pi-hole responde com um endereço nulo e a requisição não se completa.
 
-**Vantagens:**
+**Principais benefícios**
 
-- Bloqueia anúncios em todos os dispositivos da rede (celulares, TVs, consoles, computadores), sem instalar nada neles.
-- Reduz consumo de banda e melhora o tempo de carregamento de páginas.
-- Oferece painel com estatísticas de consultas DNS.
+- Bloqueia anúncios e rastreadores em **todos os dispositivos da rede** (celulares, TVs, consoles, computadores), sem instalar nada neles.
+- Reduz o consumo de banda e melhora o carregamento das páginas.
+- Oferece um painel web com estatísticas das consultas DNS.
 - Permite listas de bloqueio e liberação personalizadas.
 
-## 2. Requisitos
+Este repositório reúne:
+
+| Arquivo | Descrição |
+|---------|-----------|
+| [`install.sh`](install.sh) | Instalador automatizado: atualiza o servidor, instala o Pi-hole e configura o firewall |
+| `README.md` | Esta documentação, com instalação rápida e manual |
+| [`LICENSE`](LICENSE) | Licença MIT |
+
+---
+
+## Instalação rápida (uma linha)
+
+Em um servidor Ubuntu com IP fixo, execute:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SEU-USUARIO/pihole-ubuntu-ptbr/main/install.sh | sudo bash
+```
+
+> Troque `SEU-USUARIO` pelo nome da conta do GitHub onde o repositório foi publicado.
+
+O assistente do Pi-hole faz perguntas durante a instalação (interface de rede, DNS upstream, etc.). Por isso, execute o comando em um terminal interativo, como uma sessão SSH.
+
+### Prefere revisar o script antes de executar?
+
+Executar scripts baixados da internet exige confiança na origem. Se quiser ler o código antes:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SEU-USUARIO/pihole-ubuntu-ptbr/main/install.sh -o install.sh
+less install.sh
+sudo bash install.sh
+```
+
+---
+
+## O que o instalador faz
+
+1. **Verifica o sistema:** versão do Ubuntu, memória RAM, espaço em disco e acesso à internet.
+2. **Detecta a rede:** interface, endereço IP e avisa se o IP parece dinâmico (DHCP).
+3. **Atualiza o servidor:** `apt update` e `apt upgrade` sem perguntas.
+4. **Instala as dependências:** `curl`, `ca-certificates`, `iproute2`, `git` e `ufw`.
+5. **Confere a porta 53:** impede a instalação se outro serviço de DNS estiver ocupando a porta.
+6. **Instala o Pi-hole:** baixa o instalador oficial e o executa a partir de um arquivo, o que evita o travamento relatado no formato `curl | bash` no Ubuntu 26.04.
+7. **Define a senha do painel web** (opcional, com confirmação).
+8. **Configura o firewall UFW** (opcional, com confirmação), liberando SSH, DNS e o painel web somente para a sua rede local.
+9. **Mostra um resumo final** com o endereço do painel e os próximos passos.
+
+O script pede confirmação antes de qualquer ação mais sensível e encerra com mensagem clara se algo estiver errado.
+
+---
+
+## Opções do instalador
+
+Passe opções com `bash -s --`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SEU-USUARIO/pihole-ubuntu-ptbr/main/install.sh | sudo bash -s -- --sem-upgrade
+```
+
+| Opção | Efeito |
+|-------|--------|
+| `--sem-upgrade` | Não atualiza os pacotes do sistema |
+| `--sem-firewall` | Não configura o UFW |
+| `--sim` | Responde "sim" às perguntas do script (o assistente do Pi-hole continua interativo) |
+| `--ajuda` | Mostra a ajuda (ao executar o arquivo baixado) |
+
+> **Atenção ao firewall:** o instalador libera o SSH somente para a sua rede local. Se você acessa o servidor por SSH de fora dessa rede, use `--sem-firewall` para não perder o acesso.
+
+---
+
+## Requisitos
 
 | Item | Mínimo recomendado |
 |------|--------------------|
@@ -48,62 +125,29 @@ O Pi-hole é um servidor DNS com filtragem. Quando um dispositivo da rede tenta 
 | Rede | Endereço IP **fixo** na rede local |
 | Acesso | Usuário com permissão `sudo` |
 
-> O Pi-hole **não** deve ser instalado em um servidor que já utilize as portas 53 (DNS), 80 ou 443 (web) para outros serviços, a menos que você ajuste as portas.
+> O Pi-hole não deve ser instalado em um servidor que já use as portas 53 (DNS), 80 ou 443 (web) para outros serviços, a menos que você ajuste as portas.
 
-## 3. Preparação do servidor
+### IP fixo
 
-Atualize o sistema e instale utilitários básicos:
+Os dispositivos usarão o IP do servidor como DNS, então ele não pode mudar. Há duas formas de garantir isso: configurar o IP fixo no próprio servidor (Netplan, descrito abaixo) ou reservar o IP no roteador (reserva DHCP por MAC). O ideal é fazer as duas.
 
-```bash
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git ufw
-```
+**Configuração via Netplan**
 
-Confira a versão do Ubuntu:
-
-```bash
-lsb_release -a
-```
-
-Defina o fuso horário (importante para os horários nos logs e estatísticas):
-
-```bash
-sudo timedatectl set-timezone America/Sao_Paulo
-timedatectl
-```
-
-## 4. Configuração de IP fixo
-
-O Pi-hole precisa de um IP que não mude, pois os dispositivos da rede vão usá-lo como servidor DNS.
-
-### 4.1 Descubra o nome da interface e as informações atuais
+Descubra a interface e o gateway:
 
 ```bash
 ip -br a
 ip route | grep default
-```
-
-Anote:
-
-- Nome da interface (ex.: `eth0`, `ens18`, `enp3s0`)
-- Gateway (IP do roteador, ex.: `192.168.0.1`)
-- Faixa de rede (ex.: `192.168.0.0/24`)
-
-### 4.2 Configure via Netplan
-
-Liste os arquivos existentes:
-
-```bash
 ls /etc/netplan/
 ```
 
-Edite o arquivo encontrado (o nome pode variar, por exemplo `00-installer-config.yaml` ou `50-cloud-init.yaml`):
+Edite o arquivo encontrado (o nome varia, por exemplo `00-installer-config.yaml` ou `50-cloud-init.yaml`):
 
 ```bash
 sudo nano /etc/netplan/00-installer-config.yaml
 ```
 
-Exemplo de configuração (ajuste interface e endereços para a sua rede):
+Exemplo (ajuste interface e endereços para a sua rede):
 
 ```yaml
 network:
@@ -122,24 +166,31 @@ network:
           - 1.0.0.1
 ```
 
-Aplique:
+Aplique com segurança:
 
 ```bash
 sudo netplan try
 ```
 
-Se a conexão continuar funcionando, confirme pressionando **Enter**. Depois valide:
+Se a conexão continuar funcionando, confirme com **Enter**. O `netplan try` desfaz a alteração sozinho se você perder o acesso.
+
+---
+
+## Instalação manual passo a passo
+
+Prefere fazer cada etapa por conta própria? Siga abaixo.
+
+### 1. Preparar o servidor
 
 ```bash
-ip -br a
-ping -c 3 google.com
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl git ufw
+sudo timedatectl set-timezone America/Sao_Paulo
 ```
 
-> **Dica:** também é boa prática reservar esse IP no roteador (reserva DHCP por MAC) para evitar conflitos.
+### 2. Resolver conflito na porta 53 (se necessário)
 
-## 5. Resolvendo conflito na porta 53 (se necessário)
-
-O Ubuntu usa o `systemd-resolved`, que mantém um *stub resolver* em `127.0.0.53:53`. Em alguns casos isso causa conflito com o Pi-hole. Verifique quem está usando a porta 53:
+O Ubuntu usa o `systemd-resolved`, que mantém um *stub resolver* em `127.0.0.53:53`. Verifique quem usa a porta:
 
 ```bash
 sudo ss -tulpn | grep ':53 '
@@ -149,176 +200,136 @@ Se o instalador acusar erro de porta em uso ou o serviço `pihole-FTL` não inic
 
 ```bash
 sudo mkdir -p /etc/systemd/resolved.conf.d
-sudo nano /etc/systemd/resolved.conf.d/pihole.conf
-```
-
-Conteúdo:
-
-```ini
-[Resolve]
-DNSStubListener=no
-```
-
-Atualize o link do `resolv.conf` e reinicie o serviço:
-
-```bash
+printf '[Resolve]\nDNSStubListener=no\n' | sudo tee /etc/systemd/resolved.conf.d/pihole.conf
 sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 sudo systemctl restart systemd-resolved
 ```
 
-Confirme que a porta 53 ficou livre:
-
-```bash
-sudo ss -tulpn | grep ':53 '
-```
-
-## 6. Instalação do Pi-hole
-
-### 6.1 Instalador oficial (instalação automatizada)
+### 3. Instalar o Pi-hole
 
 ```bash
 curl -sSL https://install.pi-hole.net | bash
 ```
 
-Rode o comando com seu usuário normal. O instalador avisa que precisa de privilégios elevados e pede a senha do `sudo` quando necessário.
+Rode com seu usuário normal. O instalador pede a senha do `sudo` quando necessário.
 
-> **Segurança:** esse comando executa um script baixado da internet. Se quiser revisar o conteúdo antes de executar, baixe o arquivo e leia com `curl -sSL https://install.pi-hole.net -o basic-install.sh && less basic-install.sh`.
-
-> **Ubuntu 26.04:** há relatos de a instalação parecer travada ao usar o comando acima. Se isso acontecer, interrompa com `Ctrl + C` e use o método em duas etapas, que faz exatamente a mesma instalação:
+> **Ubuntu 26.04:** há relatos de a instalação parecer travada com o comando acima. Se acontecer, interrompa com `Ctrl + C` e use o método em duas etapas, que faz a mesma instalação:
 >
 > ```bash
 > curl -sSL https://install.pi-hole.net -o install.sh && sudo bash install.sh; rm install.sh
 > ```
 
-### 6.2 Passo a passo do assistente
+**Assistente de instalação**
 
-Durante a instalação, o assistente (tela azul) fará algumas perguntas:
+1. **Aviso de requisitos:** confirme que o servidor tem IP fixo.
+2. **Interface de rede:** selecione a interface principal (ex.: `ens18`).
+3. **Provedor DNS upstream:** escolha para onde o Pi-hole encaminha as consultas não bloqueadas (Cloudflare, Google, Quad9 etc.).
+4. **Lista de bloqueio padrão:** aceite a lista inicial.
+5. **Registro de consultas:** recomendado manter ativado.
+6. **Modo de privacidade:** escolha o nível de detalhe das estatísticas.
 
-1. **Aviso de requisitos** – confirme que o servidor possui IP fixo.
-2. **Interface de rede** – selecione a interface principal (ex.: `ens18`).
-3. **Provedor DNS upstream** – escolha para onde o Pi-hole encaminhará as consultas não bloqueadas (Cloudflare, Google, Quad9, OpenDNS etc.).
-4. **Lista de bloqueio padrão** – aceite a lista inicial (StevenBlack).
-5. **Registro de consultas (logging)** – recomendado manter ativado.
-6. **Modo de privacidade** – escolha o nível de detalhe das estatísticas (o padrão mostra tudo).
-
-Ao final, o assistente exibirá o endereço da interface web. Na v6 a senha do administrador é definida por você (veja a próxima seção).
-
-## 7. Acesso à interface web e senha
-
-Defina (ou redefina) a senha do painel:
+### 4. Definir a senha do painel
 
 ```bash
 sudo pihole setpassword
 ```
 
-Acesse pelo navegador:
+Acesse `http://IP-DO-SERVIDOR/admin` no navegador (por exemplo, `http://192.168.0.10/admin`).
 
-```
-http://192.168.0.10/admin
-```
+### 5. Configurar o firewall (UFW)
 
-(substitua pelo IP do seu servidor). Entre com a senha definida.
-
-## 8. Configuração do firewall (UFW)
-
-Libere apenas o necessário, **somente para a sua rede local** (ajuste `192.168.0.0/24` para a sua faixa):
+Libere apenas o necessário, **somente para a sua rede local** (ajuste `192.168.0.0/24`):
 
 ```bash
-# SSH (não esqueça, para não perder o acesso ao servidor)
+# SSH (libere antes de ativar o firewall para não perder o acesso)
 sudo ufw allow from 192.168.0.0/24 to any port 22 proto tcp
 
 # DNS
-sudo ufw allow from 192.168.0.0/24 to any port 53 proto tcp
-sudo ufw allow from 192.168.0.0/24 to any port 53 proto udp
+sudo ufw allow from 192.168.0.0/24 to any port 53
 
-# Interface web (HTTP e HTTPS)
+# Painel web
 sudo ufw allow from 192.168.0.0/24 to any port 80 proto tcp
 sudo ufw allow from 192.168.0.0/24 to any port 443 proto tcp
 
-# Somente se for usar o Pi-hole como servidor DHCP
+# Somente se o Pi-hole for o servidor DHCP da rede
 # sudo ufw allow from 192.168.0.0/24 to any port 67 proto udp
 
 sudo ufw enable
 sudo ufw status verbose
 ```
 
-> **Atenção:** nunca exponha a porta 53 do Pi-hole para a internet. Um DNS aberto pode ser abusado em ataques de amplificação.
+> **Importante:** nunca exponha a porta 53 do Pi-hole para a internet. Um DNS aberto pode ser abusado em ataques de amplificação. Essas regras tratam apenas de tráfego de entrada, então o Pi-hole continua acessando normalmente o DNS upstream (como a Cloudflare).
 
-## 9. Apontando a rede para o Pi-hole
+---
 
-Há duas formas principais de fazer os dispositivos usarem o Pi-hole.
+## Configurando a rede para usar o Pi-hole
 
-### Opção A – Pelo roteador (recomendada)
+### Opção A: pelo roteador (recomendada)
 
 1. Acesse o painel do roteador.
 2. Localize as configurações de **DHCP / LAN**.
 3. Defina o **DNS primário** como o IP do Pi-hole (ex.: `192.168.0.10`).
-4. Deixe o DNS secundário **vazio** (ou use outro Pi-hole). Se colocar um DNS público, parte das consultas pode escapar do bloqueio.
-5. Reinicie a conexão nos dispositivos para renovar o DHCP.
+4. Deixe o **DNS secundário vazio**. Um DNS público no secundário faz parte das consultas escapar do bloqueio.
+5. Renove a conexão nos dispositivos para pegar a nova configuração.
 
-> Alguns roteadores de operadoras não permitem alterar o DNS da LAN. Nesse caso, use a opção B ou o próprio Pi-hole como servidor DHCP (desativando o DHCP do roteador).
+> Alguns roteadores de operadora não permitem alterar o DNS da LAN. Nesse caso, use a opção B, ou use o próprio Pi-hole como servidor DHCP (desativando o DHCP do roteador).
 
-### Opção B – Dispositivo por dispositivo
+### Opção B: dispositivo por dispositivo
 
 Configure manualmente o DNS de cada dispositivo para o IP do Pi-hole.
 
 ### Testando
 
-Em um computador cliente:
+Em um computador da rede:
 
 ```bash
-nslookup doubleclick.net 192.168.0.10
+nslookup doubleclick.net 192.168.0.10   # domínio de anúncio: deve retornar 0.0.0.0
+nslookup google.com 192.168.0.10        # domínio normal: deve resolver
 ```
 
-Um domínio bloqueado deve retornar `0.0.0.0` (ou resposta nula). Teste também um domínio normal:
+No painel, a aba **Query Log** mostra as consultas chegando e quais foram bloqueadas.
 
-```bash
-nslookup google.com 192.168.0.10
-```
+---
 
-Você também pode conferir no painel em **Query Log** se as consultas estão chegando.
+## Listas de bloqueio
 
-## 10. Listas de bloqueio (adlists)
-
-No painel: **Adlists** → adicione a URL da lista → **Add** → depois atualize o gravity.
-
-Via terminal, após adicionar listas:
+No painel, abra **Adlists**, adicione a URL da lista e atualize o *gravity*. Pelo terminal:
 
 ```bash
 sudo pihole -g
 ```
 
-Algumas listas populares:
-
 | Lista | URL |
 |-------|-----|
 | StevenBlack (padrão) | `https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts` |
-| OISD (completa) | `https://big.oisd.nl` |
+| OISD | `https://big.oisd.nl` |
 | HaGeZi Multi Pro | `https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt` |
 
-> Cuidado com excesso de listas: quanto mais listas, maior a chance de **falsos positivos** (sites legítimos bloqueados). Comece com poucas e vá ampliando.
+> Quanto mais listas, maior a chance de **falsos positivos** (sites legítimos bloqueados). Comece com poucas e amplie aos poucos.
 
-### Liberando ou bloqueando domínios manualmente
+Liberar ou bloquear um domínio manualmente:
 
 ```bash
-sudo pihole allow exemplo.com     # libera um domínio
-sudo pihole deny exemplo.com      # bloqueia um domínio
+sudo pihole allow exemplo.com
+sudo pihole deny exemplo.com
 ```
 
-## 11. Comandos úteis
+---
+
+## Comandos úteis
 
 | Comando | Descrição |
 |---------|-----------|
 | `pihole status` | Mostra se o Pi-hole está ativo |
 | `pihole -g` | Atualiza as listas de bloqueio (gravity) |
-| `pihole -q dominio.com` | Verifica em quais listas um domínio está |
-| `pihole -t` | Acompanha o log de consultas em tempo real |
+| `pihole -q dominio.com` | Mostra em quais listas um domínio está |
+| `pihole -t` | Acompanha as consultas em tempo real |
 | `pihole disable 5m` | Desativa o bloqueio por 5 minutos |
 | `pihole enable` | Reativa o bloqueio |
-| `pihole setpassword` | Define/altera a senha do painel |
+| `pihole setpassword` | Define ou altera a senha do painel |
 | `pihole -up` | Atualiza o Pi-hole |
 | `pihole -d` | Gera log de depuração |
-| `pihole -r` | Reparar / reconfigurar a instalação |
+| `pihole -r` | Repara ou reconfigura a instalação |
 
 Gerenciamento do serviço:
 
@@ -327,25 +338,31 @@ sudo systemctl status pihole-FTL
 sudo systemctl restart pihole-FTL
 ```
 
-## 12. Atualização
+---
+
+## Atualização
 
 ```bash
 sudo pihole -up
-```
-
-Mantenha também o Ubuntu atualizado:
-
-```bash
 sudo apt update && sudo apt upgrade -y
 ```
 
-## 13. Solução de problemas
+---
 
-### A instalação parece travada (Ubuntu 26.04)
+## Solução de problemas
 
-Interrompa com `Ctrl + C` e use o método em duas etapas descrito na [seção 6.1](#61-instalador-oficial-instalação-automatizada).
+<details>
+<summary><strong>A instalação parece travada (Ubuntu 26.04)</strong></summary>
 
-### O serviço `pihole-FTL` não inicia
+Interrompa com `Ctrl + C` e use o instalador deste repositório (que já contorna o problema) ou o método em duas etapas:
+
+```bash
+curl -sSL https://install.pi-hole.net -o install.sh && sudo bash install.sh; rm install.sh
+```
+</details>
+
+<details>
+<summary><strong>O serviço <code>pihole-FTL</code> não inicia</strong></summary>
 
 ```bash
 sudo systemctl status pihole-FTL
@@ -353,57 +370,94 @@ sudo journalctl -u pihole-FTL -n 50 --no-pager
 sudo ss -tulpn | grep -E ':53 |:80 |:443 '
 ```
 
-Normalmente é conflito de porta. Veja a [seção 5](#5-resolvendo-conflito-na-porta-53-se-necessário) ou o caso de outro servidor web ocupando as portas 80/443.
+Normalmente é conflito de porta. Veja a seção sobre a [porta 53](#2-resolver-conflito-na-porta-53-se-necessário) ou verifique se outro servidor web usa as portas 80/443.
+</details>
 
-### Sem acesso à internet depois de configurar o DNS
+<details>
+<summary><strong>Sem internet depois de configurar o DNS</strong></summary>
 
-- Verifique se o Pi-hole está ativo: `pihole status`.
-- Teste a resolução no próprio servidor: `dig google.com @127.0.0.1`.
-- Confirme o DNS upstream em **Settings → DNS** no painel.
-- Verifique o firewall: `sudo ufw status`.
+- Verifique se o Pi-hole está ativo: `pihole status`
+- Teste no próprio servidor: `dig google.com @127.0.0.1`
+- Confirme o DNS upstream em **Settings → DNS** no painel
+- Verifique o firewall: `sudo ufw status`
+</details>
 
-### Site legítimo bloqueado
-
-1. Descubra qual lista bloqueou: `pihole -q dominio.com`.
-2. Libere o domínio: `sudo pihole allow dominio.com`.
-
-### Anúncios ainda aparecem
-
-- O dispositivo pode estar usando outro DNS (DNS privado do Android, DNS sobre HTTPS no navegador, VPN).
-- Alguns anúncios (como os do YouTube e de aplicativos) vêm do mesmo domínio do conteúdo e não podem ser bloqueados por DNS.
-
-### Gerar log de depuração
+<details>
+<summary><strong>Um site legítimo foi bloqueado</strong></summary>
 
 ```bash
-sudo pihole -d
+pihole -q dominio.com          # descobre qual lista bloqueou
+sudo pihole allow dominio.com  # libera o domínio
 ```
+</details>
 
-## 14. Desinstalação
+<details>
+<summary><strong>Os anúncios ainda aparecem</strong></summary>
+
+- O dispositivo pode estar usando outro DNS (DNS privado do Android, DNS sobre HTTPS no navegador ou VPN).
+- Anúncios servidos pelo mesmo domínio do conteúdo (como no YouTube e em aplicativos) não podem ser bloqueados por DNS.
+</details>
+
+<details>
+<summary><strong>Perdi o acesso SSH depois do firewall</strong></summary>
+
+O firewall libera o SSH apenas para a rede local. Acesse o servidor pelo console físico ou pelo painel da virtualização e libere seu IP:
+
+```bash
+sudo ufw allow from SEU.IP.AQUI to any port 22 proto tcp
+```
+</details>
+
+Para qualquer outro problema, gere um log de depuração com `sudo pihole -d` e consulte o [fórum oficial](https://discourse.pi-hole.net/).
+
+---
+
+## Desinstalação
 
 ```bash
 sudo pihole uninstall
 ```
 
-Depois, restaure o DNS dos dispositivos/roteador para o padrão e, se tiver alterado, reverta a configuração do `systemd-resolved`:
+Depois, restaure o DNS do roteador e dos dispositivos para o padrão e reverta o `systemd-resolved`, se tiver alterado:
 
 ```bash
-sudo rm /etc/systemd/resolved.conf.d/pihole.conf
+sudo rm -f /etc/systemd/resolved.conf.d/pihole.conf
 sudo systemctl restart systemd-resolved
 ```
 
-## 15. Referências
+---
+
+## Perguntas frequentes
+
+**O Pi-hole bloqueia anúncios do YouTube?**
+Em geral, não. Os anúncios do YouTube são entregues pelos mesmos domínios dos vídeos, e o bloqueio por DNS não consegue separá-los.
+
+**Posso instalar em Raspberry Pi, VM ou Docker?**
+Sim, o Pi-hole funciona em todos. Este guia e o instalador foram feitos para Ubuntu Server (físico ou VM).
+
+**Preciso deixar o servidor ligado o tempo todo?**
+Sim. Se o Pi-hole estiver desligado e o DNS da rede apontar para ele, os dispositivos ficam sem resolver nomes.
+
+**O instalador funciona em Debian?**
+O Pi-hole oficialmente suporta Debian, e o script pede confirmação para continuar, mas os testes deste projeto foram feitos para Ubuntu.
+
+---
+
+## Referências
 
 - Site oficial: <https://pi-hole.net/>
 - Documentação: <https://docs.pi-hole.net/>
-- Repositório: <https://github.com/pi-hole/pi-hole>
+- Repositório do Pi-hole: <https://github.com/pi-hole/pi-hole>
 - Fórum da comunidade: <https://discourse.pi-hole.net/>
 
 ---
 
 ## Contribuindo
 
-Encontrou algum erro ou quer melhorar este guia? Abra uma *issue* ou envie um *pull request*.
+Encontrou um erro ou quer melhorar o guia ou o instalador? Abra uma *issue* ou envie um *pull request*. Ao testar o instalador em outra versão do Ubuntu, conte nos comentários o resultado.
 
 ## Licença
 
-Este guia é distribuído sob a licença [MIT](LICENSE).
+Distribuído sob a licença [MIT](LICENSE).
+
+> Este projeto não é afiliado ao Pi-hole. Pi-hole é uma marca de seus respectivos mantenedores.
