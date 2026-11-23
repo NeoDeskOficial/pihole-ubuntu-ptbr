@@ -60,7 +60,7 @@ Este repositório reúne:
 Basta colar o comando abaixo, que já atualiza o servidor e instala tudo. Em um servidor Ubuntu com IP fixo, execute:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NeoDeskOfocial/pihole-ubuntu-ptbr/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/NeoDeskOficial/pihole-ubuntu-ptbr/main/install.sh | sudo bash
 ```
 
 O assistente do Pi-hole faz perguntas durante a instalação (interface de rede, DNS upstream, etc.). Por isso, execute o comando em um terminal interativo, como uma sessão SSH.
